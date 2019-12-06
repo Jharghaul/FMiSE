@@ -7,6 +7,12 @@ mtype = {initiate, winner};
 // die Kommunikationskanaele zw. den Knoten
 chan pipes[N] = [2] of {mtype, byte}; 
 
+// Ghostvariable checks whether the i-node terminates
+//int ghost[N];
+//int i;
+// Winner Node number
+int wnr;
+
 proctype node(chan left; chan right; byte nodeNr)  {
    // wird auf wahr gesetzt, falls dieser Knoten als Koordinator gewaehlt wird
    bool mewinner   = false;
@@ -36,7 +42,7 @@ proctype node(chan left; chan right; byte nodeNr)  {
    printf("finished node %d", nodeNr);
 
    // nodeNr-node terminates -> ghost[nodeNr] is assigned by 1 
-   ghost[nodeNr] = 1;
+   //ghost[nodeNr] = 1;
 
    // Checks: if a node is marked as winner (mewinner), then its nodeNr assigns to winnerNode
    assert( !mewinner || winnerNode == nodeNr);
@@ -49,39 +55,38 @@ proctype node(chan left; chan right; byte nodeNr)  {
 init {
   // the permutation of nodes
   int permutation[N];
-
   bool used[N];
   int count = 0;
   int index;
   printf("Zu implementieren")
-  // Strategy: Each loop a index in range [0,N-1] is took out. 
-  //           If these index is already avaible in permutation, then tries again. Otherwise saves these index in permutation[count].
+  // Strategy: Each loop a index is randomly took out. After that loop is these index removed from avaible elements for next loop
   //           Repeats till permutation is filled (count == N)
   do
     :: count < N -> 
-      { 
-        again:
-        select(index : 0..N-1);
-        if
-          :: !used[index] -> used[index] = true; permutation[count] = index; count++
-          :: else -> goto again
-        fi
-      }   
+        select(index : 0 .. N-1-count);
+        int tmp = 0;
+        do
+          :: 0 <= index -> 
+            if
+              :: !used[tmp] -> index--
+            fi
+            tmp++
+          :: else -> used[tmp-1] = true; permutation[count] = tmp-1; break
+        od
+        printf("%d",count);
+        count++     
     :: else -> break
   od
-
+  printf("abcxyz");
   // runs all processes node 
-  for(int i: 0..N-1){
-    run node( pipes[permutation[(i-1)%N]] , pipes[permutation[(i+1)%N]] , permutation[i] )
+  atomic{
+    int i;
+    for(i: 0 .. N-1){
+      run node( pipes[permutation[(i-1)%N]] , pipes[permutation[(i+1)%N]] , permutation[i] )
+    }
   }
 }
 
-// Ghostvariable checks whether the i-node terminates
-int ghost[N];
-int i;
-// Winner Node number
-int wnr;
-
 // Checks whether a random node i can terminate sometimes
-select(i: 0..N-1)
-ltl t {<>(ghost[i]==1)}
+//select(i: 0..N-1)
+//ltl t {<>(ghost[i]==1)}
