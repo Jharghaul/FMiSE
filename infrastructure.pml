@@ -1,5 +1,5 @@
 // Anzahl der Knoten im Ring
-#define N 5
+#define N 9
 
 // die Nachrichtentypen
 mtype = {initiate, winner};
@@ -7,9 +7,6 @@ mtype = {initiate, winner};
 // die Kommunikationskanaele zw. den Knoten
 chan pipes[N] = [2] of {mtype, byte}; 
 
-// Ghostvariable checks whether the i-node terminates
-//int ghost[N];
-//int tung;
 // Winner Node number
 int wnr;
 
@@ -22,24 +19,37 @@ proctype node(chan left; chan right; byte nodeNr)  {
    byte nr;
    //TODO: Implementierung des Algorithmus
    left ! initiate,nodeNr;
+   printf("node %d passes node %d to left",nodeNr,nodeNr);
    receive:
-   right ? msg,nr;
+   
+   pipes[nodeNr] ? msg,nr;
+   printf("node %d receives node %d from right",nodeNr,nr);
+   
    if
-    :: msg == winner -> mewinner = false; winnerNode = nr; left ! winner,winnerNode; goto finish 
+    :: msg == winner -> 
+      atomic{
+        mewinner = false; winnerNode = nr; 
+        printf("node %d passes winner node %d to left",nodeNr,winnerNode);
+        left ! winner,winnerNode; 
+        goto finish 
+      }
     :: else ->
       if
         :: nr < nodeNr -> goto receive
-        :: nr > nodeNr -> left ! msg,nr ; goto receive // Sends received message to left node and continues receiving message from right node
-        :: else ->  mewinner = true; winnerNode = nodeNr; // Finds out the winner
-                    wnr = nodeNr ; // Assigns wnr by number of current node (nodeNr)
-                    left ! winner,nodeNr; goto finish // Sends message of winner to left node and finishes then
+        :: nr > nodeNr -> atomic{ left ! msg,nr ; printf("node %d passes node %d to left",nodeNr,nr); goto receive } // Sends received message to left node and continues receiving message from right node
+        :: else ->  atomic {
+                      mewinner = true; winnerNode = nodeNr; // Finds out the winner
+                      printf("assign winner with node nr %d",nodeNr);
+                      wnr = nodeNr ; // Assigns wnr by number of current node (nodeNr)
+                      left ! winner,nodeNr; goto finish // Sends message of winner to left node and finishs then
+                    }
       fi   
    fi
    
    finish:
 
    // Prints to console the finished node
-   printf("finished node %d", nodeNr);
+   //atomic {printf("finished node %d\n with winner = %d, wnr = %d", nodeNr,winnerNode,wnr)}
 
    // nodeNr-node terminates -> ghost[nodeNr] is assigned by 1 
    //ghost[nodeNr] = 1;
@@ -76,7 +86,10 @@ init {
         count++     
     :: else -> break
   od
-
+  int l;
+  for(l: 0 .. N-1){
+    printf("left %d, right %d, node %d",permutation[(N+l-1)%N],permutation[(N+l+1)%N],permutation[l])
+  }
   // runs all processes node 
   atomic{
     int i;
@@ -87,5 +100,8 @@ init {
 }
 
 // Checks whether a random node i can terminate sometimes
-//select(tung: 0..N-1)
-//ltl t {<>(ghost[tung]==1)}
+// Ghostvariable checks whether the i-node terminates
+//int ghost[N];
+//int random;
+//select(random: 0..N-1)
+//ltl t {<>(ghost[random]==1)}
