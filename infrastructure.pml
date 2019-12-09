@@ -19,27 +19,21 @@ proctype node(chan left; chan right; byte nodeNr)  {
    byte nr;
    //TODO: Implementierung des Algorithmus
    left ! initiate,nodeNr;
-   printf("node %d passes node %d to left",nodeNr,nodeNr);
    receive:
-   
    pipes[nodeNr] ? msg,nr;
-   printf("node %d receives node %d from right",nodeNr,nr);
-   
    if
     :: msg == winner -> 
       atomic{
         mewinner = false; winnerNode = nr; 
-        printf("node %d passes winner node %d to left",nodeNr,winnerNode);
         left ! winner,winnerNode; 
         goto finish 
       }
     :: else ->
       if
         :: nr < nodeNr -> goto receive
-        :: nr > nodeNr -> atomic{ left ! msg,nr ; printf("node %d passes node %d to left",nodeNr,nr); goto receive } // Sends received message to left node and continues receiving message from right node
+        :: nr > nodeNr -> atomic{ left ! msg,nr  goto receive } // Sends received message to left node and continues receiving message from right node
         :: else ->  atomic {
                       mewinner = true; winnerNode = nodeNr; // Finds out the winner
-                      printf("assign winner with node nr %d",nodeNr);
                       wnr = nodeNr ; // Assigns wnr by number of current node (nodeNr)
                       left ! winner,nodeNr; goto finish // Sends message of winner to left node and finishs then
                     }
