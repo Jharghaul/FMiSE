@@ -1,5 +1,5 @@
 // Anzahl der Knoten im Ring
-#define N 3
+#define N 5
 
 // die Nachrichtentypen
 mtype = {initiate, winner};
@@ -9,7 +9,7 @@ chan pipes[N] = [2] of {mtype, byte};
 
 // Ghostvariable checks whether the i-node terminates
 //int ghost[N];
-//int i;
+//int tung;
 // Winner Node number
 int wnr;
 
@@ -68,25 +68,24 @@ init {
         do
           :: 0 <= index -> 
             if
-              :: !used[tmp] -> index--
+              :: !used[tmp] -> index--;tmp++
+              :: else -> tmp++
             fi
-            tmp++
           :: else -> used[tmp-1] = true; permutation[count] = tmp-1; break
         od
-        printf("%d",count);
         count++     
     :: else -> break
   od
-  printf("abcxyz");
+
   // runs all processes node 
   atomic{
     int i;
     for(i: 0 .. N-1){
-      run node( pipes[permutation[(i-1)%N]] , pipes[permutation[(i+1)%N]] , permutation[i] )
+      run node( pipes[permutation[(N+i-1)%N]] , pipes[permutation[(N+i+1)%N]] , permutation[i] )
     }
   }
 }
 
 // Checks whether a random node i can terminate sometimes
-//select(i: 0..N-1)
-//ltl t {<>(ghost[i]==1)}
+//select(tung: 0..N-1)
+//ltl t {<>(ghost[tung]==1)}
