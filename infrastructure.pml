@@ -1,5 +1,5 @@
 // Anzahl der Knoten im Ring
-#define N 9
+#define N 5
 
 // die Nachrichtentypen
 mtype = {initiate, winner};
@@ -8,7 +8,13 @@ mtype = {initiate, winner};
 chan pipes[N] = [2] of {mtype, byte}; 
 
 // Winner Node number
-int wnr;
+byte wnr;
+
+// Checks whether a random node i can terminate sometimes
+byte ran;
+
+// Ghostvariable checks whether the i-node terminates
+byte ghost[N];
 
 proctype node(chan left; chan right; byte nodeNr)  {
    // wird auf wahr gesetzt, falls dieser Knoten als Koordinator gewaehlt wird
@@ -19,6 +25,7 @@ proctype node(chan left; chan right; byte nodeNr)  {
    byte nr;
    //TODO: Implementierung des Algorithmus
    left ! initiate,nodeNr;
+   
    receive:
    pipes[nodeNr] ? msg,nr;
    if
@@ -31,7 +38,7 @@ proctype node(chan left; chan right; byte nodeNr)  {
     :: else ->
       if
         :: nr < nodeNr -> goto receive
-        :: nr > nodeNr -> atomic{ left ! msg,nr  goto receive } // Sends received message to left node and continues receiving message from right node
+        :: nr > nodeNr -> atomic{ left ! msg,nr ; goto receive } // Sends received message to left node and continues receiving message from right node
         :: else ->  atomic {
                       mewinner = true; winnerNode = nodeNr; // Finds out the winner
                       wnr = nodeNr ; // Assigns wnr by number of current node (nodeNr)
@@ -41,12 +48,15 @@ proctype node(chan left; chan right; byte nodeNr)  {
    fi
    
    finish:
-
+   if
+    :: nodeNr == winnerNode -> pipes[nodeNr] ? _,_
+    :: else
+   fi
    // Prints to console the finished node
-   //atomic {printf("finished node %d\n with winner = %d, wnr = %d", nodeNr,winnerNode,wnr)}
+   //atomic {printf("finished node %d\n with winner = %d \n", nodeNr,winnerNode)}
 
    // nodeNr-node terminates -> ghost[nodeNr] is assigned by 1 
-   //ghost[nodeNr] = 1;
+   ghost[nodeNr] = 1;
 
    // Checks: if a node is marked as winner (mewinner), then its nodeNr assigns to winnerNode
    assert( !mewinner || winnerNode == nodeNr);
@@ -58,19 +68,19 @@ proctype node(chan left; chan right; byte nodeNr)  {
 
 init {
   // the permutation of nodes
-  int permutation[N];
+  byte permutation[N];
   bool used[N];
-  int count = 0;
-  int index;
+  byte count = 0;
+  byte index;
   printf("Zu implementieren")
   // Strategy: Each loop a index is randomly took out. After that loop is these index removed from avaible elements for next loop
   //           Repeats till permutation is filled (count == N)
   do
     :: count < N -> 
-        select(index : 0 .. N-1-count);
-        int tmp = 0;
+        select(index : 1 .. N-count);
+        byte tmp = 0;
         do
-          :: 0 <= index -> 
+          :: 1 <= index -> 
             if
               :: !used[tmp] -> index--;tmp++
               :: else -> tmp++
@@ -80,22 +90,23 @@ init {
         count++     
     :: else -> break
   od
-  int l;
+
+  // print the permutation
+  /*int l;
   for(l: 0 .. N-1){
-    printf("left %d, right %d, node %d",permutation[(N+l-1)%N],permutation[(N+l+1)%N],permutation[l])
-  }
+    printf("%d : node %d",l,permutation[l])
+  }*/
+
   // runs all processes node 
   atomic{
-    int i;
+    byte i;
     for(i: 0 .. N-1){
       run node( pipes[permutation[(N+i-1)%N]] , pipes[permutation[(N+i+1)%N]] , permutation[i] )
     }
   }
+
+  // selects random index to check
+  select(ran : 0 .. N-1)
 }
 
-// Checks whether a random node i can terminate sometimes
-// Ghostvariable checks whether the i-node terminates
-//int ghost[N];
-//int random;
-//select(random: 0..N-1)
-//ltl t {<>(ghost[random]==1)}
+ltl t {<>(ghost[ran]==1)}
