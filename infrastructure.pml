@@ -1,5 +1,5 @@
 // Anzahl der Knoten im Ring
-#define N 5
+#define N 6
 
 // die Nachrichtentypen
 mtype = {initiate, winner};
@@ -16,6 +16,11 @@ byte ran;
 // Ghostvariable checks whether the i-node terminates
 byte ghost[N];
 
+// If a i-node is winner, then meWin[i] = true
+bool meWin[N];
+
+byte wNode[N];
+
 proctype node(chan left; chan right; byte nodeNr)  {
    // wird auf wahr gesetzt, falls dieser Knoten als Koordinator gewaehlt wird
    bool mewinner   = false;
@@ -31,7 +36,8 @@ proctype node(chan left; chan right; byte nodeNr)  {
    if
     :: msg == winner -> 
       atomic{
-        mewinner = false; winnerNode = nr; 
+        mewinner = false; winnerNode = nr; meWin[nodeNr] = false; 
+        wNode[nodeNr] = winnerNode; // wNode of Current node holds now winnernode number 
         left ! winner,winnerNode; 
         goto finish 
       }
@@ -40,7 +46,7 @@ proctype node(chan left; chan right; byte nodeNr)  {
         :: nr < nodeNr -> goto receive
         :: nr > nodeNr -> atomic{ left ! msg,nr ; goto receive } // Sends received message to left node and continues receiving message from right node
         :: else ->  atomic {
-                      mewinner = true; winnerNode = nodeNr; // Finds out the winner
+                      mewinner = true; winnerNode = nodeNr; meWin[nodeNr] = true; wNode[nodeNr] = winnerNode; // Finds out the winner
                       wnr = nodeNr ; // Assigns wnr by number of current node (nodeNr)
                       left ! winner,nodeNr; goto finish // Sends message of winner to left node and finishs then
                     }
@@ -55,14 +61,14 @@ proctype node(chan left; chan right; byte nodeNr)  {
    // Prints to console the finished node
    //atomic {printf("finished node %d\n with winner = %d \n", nodeNr,winnerNode)}
 
-   // nodeNr-node terminates -> ghost[nodeNr] is assigned by 1 
+   // nodeNr-node terminates -> ghost[nodeNr] is assigned to 1 
    ghost[nodeNr] = 1;
 
    // Checks: if a node is marked as winner (mewinner), then its nodeNr assigns to winnerNode
-   assert( !mewinner || winnerNode == nodeNr);
+   //assert( !mewinner || winnerNode == nodeNr);
 
    // Checks whether all nodes have the same winnerNode
-   assert( winnerNode == wnr);
+   //assert( winnerNode == wnr);
 }
 
 
@@ -104,9 +110,18 @@ init {
       run node( pipes[permutation[(N+i-1)%N]] , pipes[permutation[(N+i+1)%N]] , permutation[i] )
     }
   }
-
-  // selects random index to check
-  select(ran : 0 .. N-1)
 }
 
-ltl t {<>(ghost[ran]==1)}
+active proctype verification(){
+  // selects random index to check
+  select(ran : 0 .. N-1);
+
+  // Checks: if a node is marked as winner, then its nodeNr should be wnr
+  assert(!meWin[ran] || ran == wnr)
+}*/
+
+// Checks whether all nodes have the same winnerNode (N-1) after termination
+ltl t1 {<>(wNode[ran] == N-1)}
+
+// Checks whether all nodes terminate sometimes
+ltl t0 {<>(ghost[ran]==1)}
