@@ -1,0 +1,6 @@
+(a) Die Aussage gilt.
+
+(b) Die Aussage gilt nicht denn es ist möglich, dass der Angreifer über internet-channel eine Nachricht mit der gewussten Nachricht msg3 (learned_msg3,B,K_NONE,encryptedMsg,0,0,0) schickt ; Bob diese Nachricht annimmt und seine partyB zu A dekodiert. Danach schickt Bob eine Nachricht weiter mit dem Session Key (KAB_OLD). Den kennt der Angreifer und wenn er über internet-channel eine Nachricht mit dem Session Key KAB_OLD empfängt, weiß er dass diese Nachricht von Bob ist (KAB_OLD wird nicht mehr vom server erstellt und nicht von Alice verwendet). Mithilfe der Nachricht ist Nonce von Bob für den Angreifer bekannt. Daraufhin sendet der Angreifer Bob eine Nachricht mit learned_msg5 (msg5 ist dem Angreifer leider auch bekannt), damit Bob zum Ende kommt und denkt, dass er mit Alice kommuniziert.
+Deswegen kann der Angreifer Nonce von Bob wissen, obwohl partyB = A und statusB auf true gesetzt ist.  
+
+(c) Die Aussage gilt. 
