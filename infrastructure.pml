@@ -37,7 +37,7 @@ proctype node(chan left; chan right; byte nodeNr)  {
     :: msg == winner -> 
       atomic{
         mewinner = false; winnerNode = nr; meWin[nodeNr] = false; 
-        wNode[nodeNr] = winnerNode; // wNode of Current node holds now winnernode number 
+        wNode[nodeNr-1] = winnerNode; // wNode of Current node holds now winnernode number 
         left ! winner,winnerNode; 
         goto finish 
       }
@@ -46,7 +46,7 @@ proctype node(chan left; chan right; byte nodeNr)  {
         :: nr < nodeNr -> goto receive
         :: nr > nodeNr -> atomic{ left ! msg,nr ; goto receive } // Sends received message to left node and continues receiving message from right node
         :: else ->  atomic {
-                      mewinner = true; winnerNode = nodeNr; meWin[nodeNr] = true; wNode[nodeNr] = winnerNode; // Finds out the winner
+                      mewinner = true; winnerNode = nodeNr; meWin[nodeNr-1] = true; wNode[nodeNr-1] = winnerNode; // Finds out the winner
                       wnr = nodeNr ; // Assigns wnr by number of current node (nodeNr)
                       left ! winner,nodeNr; goto finish // Sends message of winner to left node and finishs then
                     }
@@ -62,7 +62,7 @@ proctype node(chan left; chan right; byte nodeNr)  {
    //atomic {printf("finished node %d\n with winner = %d \n", nodeNr,winnerNode)}
 
    // nodeNr-node terminates -> ghost[nodeNr] is assigned to 1 
-   ghost[nodeNr] = 1;
+   ghost[nodeNr-1] = 1;
 
    // Checks: if a node is marked as winner (mewinner), then its nodeNr assigns to winnerNode
    //assert( !mewinner || winnerNode == nodeNr);
@@ -107,7 +107,7 @@ init {
   atomic{
     byte i;
     for(i: 0 .. N-1){
-      run node( pipes[i] , pipes[(i+1)%N] , permutation[i] )
+      run node( pipes[i] , pipes[(i+1)%N] , permutation[i]+1 )
     }
   }
 }
@@ -117,11 +117,11 @@ active proctype verification(){
   select(ran : 0 .. N-1);
 
   // Checks: if a node is marked as winner, then its nodeNr should be wnr
-  assert(!meWin[ran] || ran == wnr)
+  assert(!meWin[ran] || ran == wnr-1)
 }
 
 // Checks whether all nodes have the same winnerNode (N-1) after termination
-//ltl t1 {<>(wNode[ran] == N-1)}
+ltl t1 {<>(wNode[ran] == N)}
 
 // Checks whether all nodes terminate sometimes
-//ltl t0 {<>(ghost[ran]==1)}
+ltl t0 {<>(ghost[ran]==1)}
