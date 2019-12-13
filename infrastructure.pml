@@ -1,5 +1,5 @@
 // Anzahl der Knoten im Ring
-#define N 6
+#define N 5
 
 // die Nachrichtentypen
 mtype = {initiate, winner};
@@ -32,7 +32,7 @@ proctype node(chan left; chan right; byte nodeNr)  {
    left ! initiate,nodeNr;
    
    receive:
-   pipes[nodeNr] ? msg,nr;
+   right ? msg,nr;
    if
     :: msg == winner -> 
       atomic{
@@ -55,7 +55,7 @@ proctype node(chan left; chan right; byte nodeNr)  {
    
    finish:
    if
-    :: nodeNr == winnerNode -> pipes[nodeNr] ? _,_
+    :: nodeNr == winnerNode -> right ? _,_
     :: else
    fi
    // Prints to console the finished node
@@ -107,7 +107,7 @@ init {
   atomic{
     byte i;
     for(i: 0 .. N-1){
-      run node( pipes[permutation[(N+i-1)%N]] , pipes[permutation[(N+i+1)%N]] , permutation[i] )
+      run node( pipes[i] , pipes[(i+1)%N] , permutation[i] )
     }
   }
 }
@@ -118,10 +118,10 @@ active proctype verification(){
 
   // Checks: if a node is marked as winner, then its nodeNr should be wnr
   assert(!meWin[ran] || ran == wnr)
-}*/
+}
 
 // Checks whether all nodes have the same winnerNode (N-1) after termination
-ltl t1 {<>(wNode[ran] == N-1)}
+//ltl t1 {<>(wNode[ran] == N-1)}
 
 // Checks whether all nodes terminate sometimes
-ltl t0 {<>(ghost[ran]==1)}
+//ltl t0 {<>(ghost[ran]==1)}
