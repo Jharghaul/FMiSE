@@ -79,6 +79,7 @@ active proctype Bob() {
       if
         :: encryptedMsg == KAB_A_KBS -> sessionKey = KAB; partyB = A
         :: encryptedMsg == KAB_OLD_A_KBS -> sessionKey = KAB_OLD; partyB = A
+        :: else
       fi
       // Bob sends his nonce to the sender
       internet ! msg4,partyB,sessionKey,NB,0,0,0;
@@ -89,7 +90,7 @@ active proctype Bob() {
 }
 
 
-active proctype Intruder() {
+/*active proctype Intruder() {
   mtype msg, key, cnt1, cnt2, cnt3, cnt4, r;
   mtype c_msg,c_key, c_cnt1, c_cnt2, c_cnt3, c_cnt4;
   mtype receipt;
@@ -134,11 +135,11 @@ active proctype Intruder() {
       fi;      
       internet ! msg,receipt,key,cnt1,cnt2,cnt3,cnt4;
   od
-}
+}*/
 
-ltl t0 { []<>(statusA && statusB) && <>(Server@terminate)};
+ltl BEIDE_OK { []<>(statusA && statusB) && <>(Server@terminate)};
 
-/*
+
 //ghost variable for intruder
 bool learned_nonceB;
 
@@ -167,4 +168,4 @@ active proctype intruder(){
 
 ltl t1 { []( !statusA || !(partyA == B) || !learned_nonceB ) };
 ltl t2 { []( !statusB || !(partyB == A) || !learned_nonceB ) };
-ltl t3 { []( !statusA || !statusB || partyA == B && partyB == A )};*/
+ltl t3 { []( !statusA || !statusB || partyA == B && partyB == A )};
